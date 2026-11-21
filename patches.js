@@ -186,4 +186,85 @@ module.exports = function (html) {
 const _base2 = module.exports;
 module.exports = function (html) {
   return _base2(html).split("if(tr>=mr){").join("if(mr>=5?tr>mr:tr>=mr){");
-};
+};/* ===== CORREÇÃO: acessórios (mochila 💎) e "morto/caído no chão" visíveis para os outros jogadores =====
+   Usa o canal escondido de chat (~~ac~~ e ~~dth~~), então NÃO precisa mudar o server.js. */
+try{(function(){
+ var lo=function(s){return String(s==null?'':s).toLowerCase()};
+ function ready(){try{return typeof online!=='undefined'&&online&&typeof started!=='undefined'&&started}catch(e){return false}}
+ var AC=Object.create(null);
+
+ /* ---------- meus acessórios equipados ---------- */
+ function myAcc(){var L=[];try{for(var c in ACST.on){var k=ACST.on[c];if(ACST.own.indexOf(k)>=0)L.push(k)}}catch(e){}return L.sort().join(',')}
+ var lastA=null,lastAT=0;
+ function accSend(force){try{
+  if(!ready())return;var s=myAcc(),n=Date.now();
+  if(!force&&s===lastA&&n-lastAT<15000)return;
+  lastA=s;lastAT=n;netSend({t:'chat',m:'~~ac~~'+s})}catch(e){}}
+ setInterval(accSend,2000);
+
+ /* ---------- estou morto no chão? ---------- */
+ var lastD='0',lastDT=0;
+ setInterval(function(){try{
+  if(!ready())return;var s=(DTH.on&&DTH.lay)?'1':'0',n=Date.now();
+  if(s!==lastD||(s==='1'&&n-lastDT>4000)){lastD=s;lastDT=n;netSend({t:'chat',m:'~~dth~~'+s})}}catch(e){}},500);
+
+ /* ---------- receber ---------- */
+ var _nm=netMsg;
+ netMsg=function(d){
+  try{
+   if(d&&d.t==='chat'&&typeof d.m==='string'){
+    var m=d.m,nm=lo(d.n);
+    if(m.indexOf('~~ac~~')===0){
+     if(nm!==lo(typeof myName!=='undefined'?myName:'')){
+      AC[nm]=m.slice(6).split(',').filter(function(k){return k&&ACD.some(function(x){return x.k===k})}).slice(0,24).join(',')}
+     return}
+    if(m.indexOf('~~dth~~')===0){
+     for(var r of remotes.values())if(lo(r.n)===nm){r.dd=m[7]==='1';r.ddT=Date.now()}
+     return}
+   }
+   if(d&&d.t==='join')setTimeout(function(){accSend(true)},800+Math.random()*3500);
+   if(d&&d.t==='ok')setTimeout(function(){accSend(true)},3500);
+  }catch(e){console.warn('syncfix2 net',e)}
+  return _nm.apply(this,arguments)};
+
+ /* ---------- desenhar acessórios no boneco/moto do outro ---------- */
+ function clearAc(r){if(r.acG)for(var i=0;i<r.acG.length;i++){var g=r.acG[i];if(g.parent)g.parent.remove(g)}r.acG=[]}
+ function rTg2(r){
+  if(r.tg2!==undefined)return r.tg2;r.tg2=null;
+  try{var A=[],B=[];bike.traverse(function(o){if(!o.isLight)A.push(o)});r.b.traverse(function(o){B.push(o)});
+   if(A.length===B.length){var i=A.indexOf(tg2);if(i>=0)r.tg2=B[i]}}catch(e){}
+  return r.tg2}
+ function buildAc(r,sig){
+  clearAc(r);var keys=sig?sig.split(','):[];
+  for(var i=0;i<keys.length;i++){
+   var d=ACD.find(function(x){return x.k===keys[i]});if(!d)continue;var MT=ACMOUNT[d.c];if(!MT)continue;
+   try{var c=MT.f,g=accBuild(d,'f');g.position.set(c.pos[0],c.pos[1],c.pos[2]);g.rotation.set(c.rot[0],c.rot[1],c.rot[2]);if(c.s)g.scale.setScalar(c.s);g.visible=true;
+    var p=c.par(),t=r.fo.g;if(typeof armL!=='undefined'&&p===armL)t=r.fo.armL;else if(typeof armR!=='undefined'&&p===armR)t=r.fo.armR;
+    t.add(g);r.acG.push(g)}catch(e){console.warn('ac foot',e)}
+   try{var c2=MT.r,t2=rTg2(r);if(c2&&t2){var g2=accBuild(d,'r');g2.position.set(c2.pos[0],c2.pos[1],c2.pos[2]);g2.rotation.set(c2.rot[0],c2.rot[1],c2.rot[2]);if(c2.s)g2.scale.setScalar(c2.s);g2.visible=true;t2.add(g2);r.acG.push(g2)}}catch(e){console.warn('ac bike',e)}
+  }
+  r.acSig=sig;r.acFo=r.fo}
+
+ /* ---------- a cada frame: acessórios + deitar quem está morto/caído ---------- */
+ var _rt=remoteTick;
+ remoteTick=function(dt){
+  _rt.apply(this,arguments);
+  try{
+   var now=Date.now();
+   for(var r of remotes.values()){
+    if(!r.g.visible)continue;
+    var sig=AC[lo(r.n)]||'';
+    if(r.acSig!==sig||r.acFo!==r.fo)buildAc(r,sig);
+    var lie=!!r.f&&(r.dn||(r.dd&&now-r.ddT<12000));
+    if(lie){r.fo.g.rotation.x=Math.PI/2;r.fo.g.position.set(0,.2,-.9);r._lay=1}
+    else if(r._lay){r.fo.g.rotation.x=0;r.fo.g.position.set(0,0,0);r._lay=0}
+   }
+  }catch(e){}
+ };
+})()}catch(e){console.warn('syncfix2',e)}
+
+/* ===== ADRENALINA: 20 segundos (antes 60) ===== */
+try{var _dwnStart=dwnStart;dwnStart=function(){var r=_dwnStart.apply(this,arguments);try{if(r&&DWN.on)DWN.end=Date.now()+20000}catch(e){}return r}}catch(e){console.warn('adrenalina 20s',e)}
+
+/* ===== LOJA DE ARMAS: sem exigência de nível (continua a licença de arma) ===== */
+try{for(var _k in WL)WL[_k]=1}catch(e){console.warn('sem nivel armas',e)}
