@@ -182,4 +182,8 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-pvp">' + PVP + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 6) /demitir: líder (cargo 5) também pode demitir quem tem o mesmo cargo 5 */
+const _base2 = module.exports;
+module.exports = function (html) {
+  return _base2(html).split("if(tr>=mr){").join("if(mr>=5?tr>mr:tr>=mr){");
 };
