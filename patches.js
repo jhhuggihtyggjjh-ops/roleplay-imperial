@@ -1,7 +1,15 @@
 /* patches.js — remendos aplicados ao index.html quando o servidor o envia.
    Para mudar o jogo, edite este arquivo (o index.html não precisa ser mexido). */
 const R = [];
-const rep = (nome, antigo, novo) => R.push([nome, antigo, novo]);
+const rep = (nome, antigo, novo) => R.push([nome, antigo, novo]);rep('convite-org',
+  "const k0=(a[0]==='/finvite'?['fav','pol','exe','fam','gob']:Object.keys(ORGN)).find(canInv);",
+  "const _c=(a[0]==='/finvite'?['fav','pol','exe','fam','gob']:Object.keys(ORGN)).filter(canInv);if(_c.length>1&&a[0]!=='/finvite'){chatSay('📨 Para qual organização? Use: /convidar ORGANIZAÇÃO ID · ex: /convidar policia '+a[1]+' · você pode: '+_c.map(x=>ORGN[x]).join(', '),'sys');return}const k0=_c[0];");
+rep('convite-msg',
+  "chatSay('📨 '+invRole(o)+' · convite para '+ORGN[o]+' enviado a '+name,'sys')",
+  "chatSay('📨 Convite para '+ORGN[o]+' enviado a '+name+' · entra no cargo 1','sys')");
+rep('convite-painel',
+  "h+=CARD+'<small>'+invRole(o)+' · você pode convidar para '+ORGN[o]+'</small>",
+  "h+=CARD+'<small>Seu cargo: '+invRole(o)+' · convidando para '+ORGN[o]+'</small>");
 
 /* 1) Veículo certo para os outros jogadores (carro/caminhão apareciam como moto) */
 rep('veiculo',
@@ -112,5 +120,66 @@ module.exports = function (html) {
   }
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-demitir">' + DEMITIR + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 5) Tiro entre jogadores (PvP): quem leva o tiro perde vida; na Área Segura ninguém é ferido */
+const PVP = `
+(function(){try{
+var DMG={pistola:12,m4:10,doze:32,smg:7,sniper:55};
+var pend={},timer=null,RL={},lastMsg={};
+function flush(){
+  timer=null;
+  for(var n in pend){var o=pend[n];if(o.d>0&&online)netSend({t:'chat',m:'~~pvp~~'+n+'|'+Math.min(99,Math.round(o.d))+'|'+(o.h?1:0)})}
+  pend={}}
+function shot(k){
+  if(!online||!remotes||!remotes.size)return;
+  var x0=px,z0=pz;
+  if(typeof inLot==='function'&&inLot(x0,z0))return;
+  var W=WD[k]||{},rng=W.rng||30;
+  var fx=-Math.sin(ph),fz=-Math.cos(ph);
+  var L=rng;try{L=Math.min(rng,wallHit(fx,fz,rng))}catch(e){}
+  var best=null,bt=L;
+  remotes.forEach(function(r){
+    if(!r||r.dn)return;
+    var dx=r.x-x0,dz=r.z-z0,t=dx*fx+dz*fz;
+    if(t<=0||t>=bt)return;
+    if(Math.abs(dx*fz-dz*fx)>=.8)return;
+    if(typeof inLot==='function'&&inLot(r.x,r.z))return;
+    best=r;bt=t});
+  if(!best)return;
+  var dmg=DMG[k]||10*((typeof DM!=='undefined'&&DM[k])||1),hs=0;
+  try{if(HSM(best.g.position,bt)>1){hs=1;dmg*=1.5}}catch(e){}
+  try{hitMark()}catch(e){}
+  var o=pend[best.n]||(pend[best.n]={d:0,h:0});o.d+=dmg;if(hs)o.h=1;
+  if(!timer)timer=setTimeout(flush,150)}
+function recv(d){
+  var q=/^~~pvp~~([^|~]{1,24})\\|(\\d{1,2})\\|([01])$/.exec(String(d.m).slice(0,48));
+  if(!q||q[1]!==myName)return;
+  var f=rmByName(d.n);if(!f||f.dn)return;
+  var now=Date.now();if(now-(RL[d.n]||0)<60)return;RL[d.n]=now;
+  var x0=foot?px:bx,z0=foot?pz:bz;
+  if(Math.hypot(f.x-x0,f.z-z0)>140)return;
+  if(typeof inLot==='function'&&(inLot(x0,z0)||inLot(f.x,f.z)))return;
+  var dm=Math.min(70,+q[2]);if(!(dm>0))return;
+  hurt(dm);
+  if(now-(lastMsg[d.n]||0)>1500){lastMsg[d.n]=now;try{chatSay('🔫 '+d.n+' acertou você (-'+dm+')','sys')}catch(e){}}}
+var _atk=attack;
+attack=function(){
+  var k=null,m0=0;
+  try{k=wpn?WK[wpn-1]:null;m0=k&&inv[k]?inv[k].m:0}catch(e){}
+  var r=_atk.apply(this,arguments);
+  try{if(k&&inv[k]&&inv[k].m<m0)shot(k)}catch(e){console.warn('pvp',e)}
+  return r};
+var _nm=netMsg;
+netMsg=function(d){
+  try{if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~pvp~~')===0){recv(d);return}}catch(e){}
+  return _nm.apply(this,arguments)};
+}catch(e){console.warn('pvp-patch',e)}})();
+`;
+
+const _base = module.exports;
+module.exports = function (html) {
+  html = _base(html);
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-pvp">' + PVP + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
