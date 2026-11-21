@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
     fs.readFile(INDEX, (err, buf) => {
       if (err) { res.writeHead(500); return res.end('index.html não encontrado'); }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
-   res.end(buf.toString('utf8').split("if(typeof HELI!=='undefined'&&HELI)return 'm';").join("if(typeof FLY!=='undefined'&&FLY)return 'm';"));
+   res.end((() => { const h = buf.toString('utf8'); try { return require('./patches.js')(h); } catch (e) { console.error('patches.js falhou:', e.message); return h; } })());
     });
     return;
   }
