@@ -114,7 +114,14 @@ wss.on('connection', ws => {
       case 'pos':
         me.x = num(d.x, me.x); me.z = num(d.z, me.z); me.h = num(d.h, me.h);
         me.f = d.f ? 1 : 0; me.s = num(d.s, 0); me.seen = 0;       // seen=0 → mudou
-        me.dirty = true; break;
+        me.dirty = true;
+        {   // ID do veículo (v), armas (w) e helicóptero (e) viajam junto da posição
+          const v = typeof d.v === 'string' && /^[a-z][0-9a-f]{0,6}$/.test(d.v) ? d.v : 'm';
+          const w = typeof d.w === 'string' && /^[a-z0-9_]{0,16}\|[a-z0-9_,]{0,40}$/.test(d.w) ? d.w : '';
+          const e = typeof d.e === 'string' && /^[0-9a-z|.\-]{1,60}$/.test(d.e) ? d.e : '';
+          if (v !== me.v || w !== me.w || e !== me.e) { me.v = v; me.w = w; me.e = e; me.metaDirty = true; }
+        }
+        break;
       case 'chat': {
         const m = String(d.m == null ? '' : d.m).slice(0, 120);
         if (m) broadcast({ t: 'chat', n: me.n, m });
@@ -152,14 +159,16 @@ setInterval(() => {
   for (const a of all) {
     const out = [];
     for (const b of all) {
-      if (b === a || !b.dirty && !b.fresh) continue;
+      if (b === a || (!b.dirty && !b.metaDirty)) continue;
       const far = Math.hypot(b.x - a.x, b.z - a.z) > 150;
       if (far && tickN % 10) continue;
-      out.push([b.id, +b.x.toFixed(2), +b.z.toFixed(2), +b.h.toFixed(3), b.f, +b.s.toFixed(1)]);
+      const row = [b.id, +b.x.toFixed(2), +b.z.toFixed(2), +b.h.toFixed(3), b.f, +b.s.toFixed(1)];
+      if (tickN % 10 === 0 || b.metaDirty) { row.push(b.v || 'm', b.w || ''); if (b.e) row.push(b.e); }
+      out.push(row);
     }
     if (out.length) send(a.ws, { t: 'st', p: out });
   }
-  for (const b of all) { if (tickN % 10 === 0) b.dirty = true; else b.dirty = false; }   // reenvia todos 1x/s (quem parou também)
+  for (const b of all) { b.metaDirty = false; if (tickN % 10 === 0) b.dirty = true; else b.dirty = false; }   // reenvia todos 1x/s (quem parou também)
 }, TICK_MS);
 
 /* derruba conexões mortas */

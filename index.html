@@ -14737,7 +14737,18 @@ try{(function(){
 
  /* 1) memoriza a última mensagem escondida que EU enviei */
  try{var _ws=WebSocket.prototype.send;WebSocket.prototype.send=function(d){
-  try{if(typeof d==='string'&&d.indexOf('~~')>0){var o=JSON.parse(d);if(o&&o.t==='chat'&&typeof o.m==='string'){var q=RX.exec(o.m);if(q)LAST[q[1]]=o.m}}}catch(e){}
+  try{
+   if(typeof d==='string'){
+    if(d.indexOf('"pos"')>0){                       // ID do veículo junto da posição (10x por segundo)
+     var o2=JSON.parse(d);
+     if(o2&&o2.t==='pos'){
+      o2.v=(LAST.vk||'~~vk~~m').slice(6);
+      var ws2=wState();if(ws2!=='|')o2.w=ws2;
+      var hv=LAST.hel?LAST.hel.slice(7):'0';if(hv!=='0'&&hv!=='')o2.e=hv;
+      arguments[0]=d=JSON.stringify(o2)}
+    }else if(d.indexOf('~~')>0){var o=JSON.parse(d);if(o&&o.t==='chat'&&typeof o.m==='string'){var q=RX.exec(o.m);if(q)LAST[q[1]]=o.m}}
+   }
+  }catch(e){}
   return _ws.apply(this,arguments)}}catch(e){}
 
  /* 2) reenvia meu estado (escalonado para não floodar) */
@@ -14779,6 +14790,18 @@ try{(function(){
  var _nm=netMsg;
  netMsg=function(d){
   try{
+   if(d&&d.t==='st'&&d.p){
+    for(var i=0;i<d.p.length;i++){
+     var a=d.p[i];if(a.length<7)continue;
+     var rm=remotes.get(a[0]);if(!rm)continue;var rn=lo(rm.n);
+     if(typeof a[6]==='string'&&/^[a-z][0-9a-f]{0,6}$/.test(a[6])&&VK2[rn]!==a[6]){VK2[rn]=a[6];_nm({t:'chat',n:rm.n,m:'~~vk~~'+a[6]})}
+     if(typeof a[7]==='string'){
+      if(a[7]==='')WPN2[rn]={h:'',b:[],t:nowMs()};
+      else{var pw=/^([a-z0-9_]{0,16})\|([a-z0-9_,]{0,40})$/.exec(a[7]);if(pw)WPN2[rn]={h:pw[1],b:pw[2]?pw[2].split(',').slice(0,2):[],t:nowMs()}}
+     }
+     if(typeof a[8]==='string'&&/^[0-9a-z|.\-]{1,60}$/.test(a[8]))_nm({t:'chat',n:rm.n,m:'~~hel~~'+a[8]});
+    }
+   }
    if(d&&d.t==='chat'&&typeof d.m==='string'){
     var m=d.m.slice(0,120),n=lo(d.n),me='';try{me=lo(myName)}catch(e){}
     var q=/^~~(vk|wpn|req)~~(.*)$/.exec(m);
