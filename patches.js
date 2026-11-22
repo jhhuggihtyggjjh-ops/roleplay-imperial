@@ -245,6 +245,47 @@ module.exports = function (html) {
   return _base4(html)
     .split("money=d.money;deliv=d.deliv;hasGun=!!d.hasGun;").join("money=d.money;deliv=d.deliv;hasGun=!!d.hasGun||Object.keys(inv).length>0;")
     .split("hasGun=true;saveG();saveW();\n  if(!wpn){wpn=WK.indexOf(k)+1;gun.visible=true}").join("hasGun=true;saveG();try{netSave(true)}catch(e){}saveW();\n  if(!wpn){wpn=WK.indexOf(k)+1;gun.visible=true}");
+};/* 10) Prisão: 10 min por estrela, sem fiança e /soltaradm ID (admin solta preso) */
+const PRI = `
+(function(){try{
+var say=function(t){try{chatSay(t,'sys')}catch(e){}};
+function admRank(f){try{var tp=ADMON[f];return Math.max(+ARKS[f]||0,tp&&tp.exp>Date.now()?(+tp.r||0):0)}catch(e){return 0}}
+var _cc=chatCmd;
+chatCmd=function(t){
+  try{var a=String(t).trim().split(/\\s+/);
+    if(String(a[0]).toLowerCase()==='/soltaradm'){
+      if(!(ADM&&ARK>=2)){say('🔒 Só ADM pode usar /soltaradm');return}
+      if(!a[1]){say('Use: /soltaradm ID');return}
+      var nm=admTarget(a[1]);
+      if(!nm){say('❌ Não achei jogador online com esse ID');return}
+      netSend({t:'chat',m:'~~sol~~'+String(nm).replace(/[|~]/g,'').slice(0,24)});
+      say('🔓 Soltando '+nm+'…');return}
+  }catch(e){console.warn('soltaradm',e)}
+  return _cc.apply(this,arguments)};
+var _nm=netMsg;
+netMsg=function(d){
+  try{if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~sol~~')===0){
+    var q=/^~~sol~~([^|~]{1,24})$/.exec(String(d.m).slice(0,40));
+    var f=String(d.n||'').toLowerCase();
+    if(q&&f!==myN()&&admRank(f)>=2&&String(q[1]).toLowerCase()===myN()&&jail.on){
+      if(typeof CAP!=='undefined'&&CAP.on){CAP.on=0;try{CAPV.visible=false}catch(e){}}
+      jailRelease();say('🔓 Um admin soltou você');try{msg('🔓 Solto por um admin',1)}catch(e){}}
+    return}}catch(e){}
+  return _nm.apply(this,arguments)};
+}catch(e){console.warn('prisao-patch',e)}})();
+`;
+
+const _base6 = module.exports;
+module.exports = function (html) {
+  html = _base6(html)
+    .split("const JZ=-900,JMS=300000;").join("const JZ=-900,JMS=600000;")
+    .split("jailGo(Math.max(.2,min/5));").join("jailGo(Math.max(.1,min/10));")
+    .split("'+CAP.n*5+' min).'").join("'+CAP.n*10+' min).'")
+    .split("jb.style.display='block';jb.textContent='💸 Pagar fiança R$ '+fmt(Math.ceil(t/60)*1000)}").join("jb.style.display='none'}")
+    .split("jb.addEventListener('pointerdown',e=>{e.preventDefault();const t=Math.ceil(").join("jb.addEventListener('pointerdown',e=>{e.preventDefault();return;const t=Math.ceil(");
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-prisao">' + PRI + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
 
 /* 9) Arma guardada nas costas/cintura dos outros jogadores: mesma posição que aparece no seu personagem */
