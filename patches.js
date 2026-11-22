@@ -322,4 +322,42 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-graficos">' + GFX + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 12) Rolar com arma na mão (puxão de lado) e o rolamento aparece para os outros jogadores */
+const ROL = `
+(function(){try{
+var DUR=500;
+function ease(p){return 1-Math.pow(1-p,2.2)}
+var _rt=remoteTick;
+remoteTick=function(dt){
+  var res=_rt.apply(this,arguments);
+  try{var now=performance.now();remotes.forEach(function(r){
+    var f=r.fo,g=f&&f.g;if(!g)return;
+    var p=r._rl?(now-r._rl)/DUR:2;
+    if(p<1&&!r.dn&&r.f){
+      var a=-ease(p)*Math.PI*2,sq=.62+.1*Math.sin(p*Math.PI),H=1.8*sq;
+      var tk=Math.min(1,Math.sin(p*Math.PI)*1.7);
+      g.visible=true;g.rotation.x=a;g.scale.set(1,sq,1);
+      g.position.y=.5*H*(1-Math.cos(a))+.15*Math.abs(Math.sin(a));
+      try{f.legL.rotation.x=f.legR.rotation.x=1.2*tk}catch(e){}
+      r._rolling=1}
+    else if(r._rolling){g.rotation.x=0;g.scale.set(1,1,1);g.position.y=0;r._rolling=0}
+  })}catch(e){}
+  return res};
+var _nm=netMsg;
+netMsg=function(d){
+  try{if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~rol~~')===0){
+    if(d.n!==myName){var r=rmByName(d.n);if(r)r._rl=performance.now()}
+    return}}catch(e){}
+  return _nm.apply(this,arguments)};
+}catch(e){console.warn('rolar-patch',e)}})();
+`;
+
+const _base8 = module.exports;
+module.exports = function (html) {
+  html = _base8(html)
+    .split("if(ok&&CR&&!RLL.on&&RLL.cd<=0)start(ix,iy)}").join("if(ok&&(CR||(wpn>0&&Math.abs(ix)>=Math.abs(iy)*.8))&&!RLL.on&&RLL.cd<=0)start(ix,iy)}")
+    .split("RLL.on=true;RLL.t=0;RLL.dx=vx;RLL.dz=vz;RLL.yaw=Math.atan2(-vx,-vz);").join("RLL.on=true;RLL.t=0;RLL.dx=vx;RLL.dz=vz;RLL.yaw=Math.atan2(-vx,-vz);try{netSend({t:'chat',m:'~~rol~~1'})}catch(e){}");
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-rolar">' + ROL + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
