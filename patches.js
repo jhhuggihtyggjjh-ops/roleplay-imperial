@@ -360,4 +360,11 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-rolar">' + ROL + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 13) Som do tiro: M4, AK-47 e AK dourada mais secos e estalados (menos eco) */
+const _base9 = module.exports;
+module.exports = function (html) {
+  return _base9(html)
+    .split("m4:{cH:3200,cg:1,cd:.022,bf:5600,bd:.36,bg:.8,bo:100,og:1,rv:.3,tl:.22},").join("m4:{cH:3800,cg:1.25,cd:.02,bf:6200,bd:.27,bg:.85,bo:105,og:.95,rv:.2,tl:.14},")
+    .split("ak:{cH:2700,cg:1.1,cd:.024,bf:4600,bd:.4,bg:.9,bo:86,og:1.1,rv:.34,tl:.26},").join("ak:{cH:3300,cg:1.3,cd:.022,bf:5400,bd:.3,bg:.95,bo:90,og:1.05,rv:.22,tl:.16},")
+    .split("akg:{cH:2900,cg:1.1,cd:.024,bf:4800,bd:.42,bg:.9,bo:84,og:1.15,rv:.36,tl:.26},").join("akg:{cH:3500,cg:1.3,cd:.022,bf:5600,bd:.3,bg:.95,bo:88,og:1.08,rv:.23,tl:.16},");
 };
