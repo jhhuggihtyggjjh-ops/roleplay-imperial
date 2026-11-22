@@ -292,4 +292,34 @@ module.exports = function (html) {
 const _base5 = module.exports;
 module.exports = function (html) {
   return _base5(html).split("if(HIP[k]){m.rotation.x=-Math.PI/2;m.scale.setScalar(.9);o.add(m);o.position.set(i?-.26:.26,.95,.02)}").join("if(1){var ZC={pistola:-.08,m4:-.25,doze:-.28,smg:-.03,sniper:-.33};m.position.z=-(ZC[k]||0);var w=new THREE.Group();w.add(m);o.add(w);if(PIST[k]){w.rotation.y=Math.PI/2;o.position.set(i?-.06:.06,1,.17)}else{m.rotation.z=Math.PI/2;w.rotation.x=Math.PI/2;o.rotation.z=i?-.8:.8;o.position.set(0,1.2,.2+i*.04)}}");
+};/* 11) Gráfico Ultra: /graficos ultra = resolução máxima da tela, com ajuste automático de FPS */
+const GFX = `
+(function(){try{
+var say=function(t){try{chatSay(t,'sys')}catch(e){}};
+function on(v,quiet){
+  window.__ULTRA=!!v;
+  try{localStorage.setItem('mrultra',v?'1':'0')}catch(e){}
+  try{PR=v?3:QP[SV.q];fit()}catch(e){}
+  if(!quiet)say(v?'🖼️ Gráfico ULTRA ligado: resolução máxima da tela (o jogo baixa sozinho se o FPS cair)':'🖼️ Gráfico normal')}
+var _cc=chatCmd;
+chatCmd=function(t){
+  try{var a=String(t).trim().split(/\\s+/),c=String(a[0]).toLowerCase();
+    if(c==='/graficos'||c==='/gráficos'||c==='/4k'){
+      var w=String(a[1]||'').toLowerCase();
+      if(c==='/4k')w='ultra';
+      if(w==='ultra'||w==='4k'||w==='max'){on(true);return}
+      if(w==='normal'||w==='padrao'||w==='padrão'||w==='off'){on(false);return}
+      say('Use: /graficos ultra  ou  /graficos normal');return}
+  }catch(e){console.warn('graficos',e)}
+  return _cc.apply(this,arguments)};
+try{if(localStorage.getItem('mrultra')==='1')setTimeout(function(){on(true,true)},1500)}catch(e){}
+}catch(e){console.warn('graficos-patch',e)}})();
+`;
+
+const _base7 = module.exports;
+module.exports = function (html) {
+  html = _base7(html).split("Math.min(devicePixelRatio,2,Math.max(PR*dyn,.5))").join("Math.min(devicePixelRatio,window.__ULTRA?3:2,Math.max(PR*dyn,.5))");
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-graficos">' + GFX + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
