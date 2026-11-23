@@ -367,4 +367,42 @@ module.exports = function (html) {
     .split("m4:{cH:3200,cg:1,cd:.022,bf:5600,bd:.36,bg:.8,bo:100,og:1,rv:.3,tl:.22},").join("m4:{cH:3800,cg:1.25,cd:.02,bf:6200,bd:.27,bg:.85,bo:105,og:.95,rv:.2,tl:.14},")
     .split("ak:{cH:2700,cg:1.1,cd:.024,bf:4600,bd:.4,bg:.9,bo:86,og:1.1,rv:.34,tl:.26},").join("ak:{cH:3300,cg:1.3,cd:.022,bf:5400,bd:.3,bg:.95,bo:90,og:1.05,rv:.22,tl:.16},")
     .split("akg:{cH:2900,cg:1.1,cd:.024,bf:4800,bd:.42,bg:.9,bo:84,og:1.15,rv:.36,tl:.26},").join("akg:{cH:3500,cg:1.3,cd:.022,bf:5600,bd:.3,bg:.95,bo:88,og:1.08,rv:.23,tl:.16},");
+};/* 14) Acessórios: refazer ao trocar de roupa e mostrar o ajuste para os outros · banimento: o servidor decide */
+const BAN = `
+(function(){try{
+var _cc=chatCmd;
+chatCmd=function(t){
+  try{
+    var a=String(t).trim().split(' ').filter(Boolean),c=String(a[0]||'').toLowerCase();
+    if(ADM&&(c==='/banir'||c==='/desbanir'||c==='/bans')){
+      var tok=a[1]||'',nm=null;
+      if(c==='/bans')netSend({t:'bans'});
+      else if(tok){nm=isNaN(+tok.replace('#',''))?tok.replace('#',''):admTarget(tok)}
+      if(c==='/banir'&&nm)netSend({t:'ban',n:nm,r:a.slice(2).join(' ').slice(0,60)||'sem motivo'});
+      if(c==='/desbanir'&&nm)netSend({t:'unban',n:nm});
+    }
+  }catch(e){console.warn('ban',e)}
+  return _cc.apply(this,arguments)};
+}catch(e){console.warn('ban-patch',e)}})();
+`;
+
+const _base10 = module.exports;
+module.exports = function (html) {
+  html = _base10(html);
+  const T = [
+    ["var ACR={},lastSig='',lastSend=0;", "var ACR={},ACJ={},lastSig='',lastSend=0,lastJ='',lastJT=0;"],
+    ["function recv(d){", "function recvJ(d){var q=String(d.m).slice(7).split('|');var k=q[0];if(!/^[A-Za-z0-9_]{1,12}$/.test(k))return;var n=function(i,a,b){var v=+q[i];return isFinite(v)?Math.max(a,Math.min(b,v)):0};(ACJ[d.n]=ACJ[d.n]||{})[k]={x:n(1,-100,100),y:n(2,-100,100),z:n(3,-100,100),rx:n(4,-360,360),ry:n(5,-360,360),rz:n(6,-360,360),s:n(7,0,500)}}\nfunction recv(d){"],
+    ["var want=ACR[r.n]||[],sig=want.join(',');", "var want=ACR[r.n]||[],sig=want.join(',')+'|'+JSON.stringify(ACJ[r.n]||{})+'|'+(r.fo&&r.fo.g&&r.fo.g.uuid);"],
+    ["if(cfg.s)g.scale.setScalar(cfg.s);g.visible=true;", "if(cfg.s)g.scale.setScalar(cfg.s);var A=(ACJ[r.n]||{})[k];if(A){g.position.x+=A.x/100;g.position.y+=A.y/100;g.position.z-=A.z/100;g.rotation.x+=A.rx*Math.PI/180;g.rotation.y+=A.ry*Math.PI/180;g.rotation.z+=A.rz*Math.PI/180;if(A.s)g.scale.multiplyScalar(A.s/100)}g.visible=true;"],
+    ["setInterval(sync,500);", "setInterval(sync,500);\nsetInterval(function(){try{if(!online||!started)return;var L=[];for(var c in ACST.on){var k=ACST.on[c];if(k&&ACST.own.indexOf(k)>=0)L.push(k)}var M=L.map(function(k){var a=(ACADJ[k]&&ACADJ[k].f)||{};return '~~acj~~'+k+'|'+[a.x,a.y,a.z,a.rx,a.ry,a.rz,a.s].map(function(v){return Math.round(+v||0)}).join('|')});var sg=M.join(';'),now=Date.now();if(sg===lastJ&&now-lastJT<15000)return;lastJ=sg;lastJT=now;M.forEach(function(m,i){setTimeout(function(){netSend({t:'chat',m:m})},i*150)})}catch(e){}},1000);"],
+    ["if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~acc~~')===0){if(d.n!==myName)recv(d);return}", "if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~acj~~')===0){if(d.n!==myName)recvJ(d);return}if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~acc~~')===0){if(d.n!==myName)recv(d);return}"],
+    ["{const bn=banAll()[String(d.n).toLowerCase()];if(bn!==undefined){banSet(d.n,bn);return}}", "{try{const B=banAll();delete B[String(d.n).toLowerCase()];localStorage.setItem('mrban',JSON.stringify(B))}catch(e){}}"],
+  ];
+  for (const [a, b] of T) {
+    if (html.includes(a)) html = html.split(a).join(b);
+    else console.warn('[patches] não aplicado (14):', a.slice(0, 40));
+  }
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-ban">' + BAN + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
