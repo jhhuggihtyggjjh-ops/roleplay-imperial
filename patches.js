@@ -405,4 +405,54 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-ban">' + BAN + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 15) Veículo não teleporta mais até você ao terminar missão/emprego (/tpcarro off desliga a trava) */
+const GUARD = `
+(function(){try{
+var on=true;try{on=localStorage.getItem('mrgvg')!=='0'}catch(e){}
+var okT=0,winT=0,lx=bx,lz=bz,lh=h,pj=null;
+function allow(){okT=Date.now()+3000}
+function revert(p){
+  bx=p.x;bz=p.z;h=p.h;sp=0;pj=null;lx=bx;lz=bz;lh=h;
+  try{chatSay('🚗 Seu veículo ficou onde estava · use /puxar para trazer','sys')}catch(e){}}
+function openWin(){
+  winT=Date.now()+6000;
+  if(pj&&Date.now()-pj.t<2500&&on)revert(pj)}
+['useCar','pickBike','puxar','ptvDo','rent','tpCity','garClick','jailRelease','homeLeave'].forEach(function(n){
+  try{var f=eval(n);if(typeof f!=='function')return;eval(n+'=function(){allow();return f.apply(this,arguments)}')}catch(e){}});
+['busEnd','tvEnd','tvFinish','dFinish','bjFinish','pDone','ocDone','crmDone','fmisEnd','heistEnd','raceEnd','cbEnd','ulEnd','opEnd'].forEach(function(n){
+  try{var f=eval(n);if(typeof f!=='function')return;eval(n+'=function(){var r=f.apply(this,arguments);openWin();return r}')}catch(e){}});
+var RX=/conclu[ií]d|entregue!|miss[aã]o|rota conclu|corrida|viagem|descarga|roubo conclu/i;
+var _m=msg;msg=function(t){try{if(RX.test(String(t)))openWin()}catch(e){}return _m.apply(this,arguments)};
+var _cs=chatSay;chatSay=function(t){try{if(RX.test(String(t)))openWin()}catch(e){}return _cs.apply(this,arguments)};
+var _cc=chatCmd;
+chatCmd=function(t){
+  try{var a=String(t).trim().split(' ').filter(Boolean);
+    if(String(a[0]||'').toLowerCase()==='/tpcarro'){
+      var w=String(a[1]||'').toLowerCase();
+      if(w==='off'||w==='on'){on=w==='on';try{localStorage.setItem('mrgvg',on?'1':'0')}catch(e){}chatSay('🚗 Trava do carro: '+(on?'LIGADA (veículo não teleporta sozinho)':'DESLIGADA'),'sys')}
+      else chatSay('Use: /tpcarro on  ou  /tpcarro off','sys');
+      return}
+  }catch(e){}
+  return _cc.apply(this,arguments)};
+setInterval(function(){
+  try{
+    if(!started){lx=bx;lz=bz;lh=h;return}
+    var d=Math.hypot(bx-lx,bz-lz),now=Date.now();
+    if(on&&d>10&&now>okT&&foot&&Math.hypot(bx-px,bz-pz)<14&&Math.hypot(lx-px,lz-pz)>25){
+      var p={x:lx,z:lz,h:lh,t:now};
+      if(now<winT){revert(p);return}
+      pj=p;
+    }
+    if(pj&&now-pj.t>2500)pj=null;
+    lx=bx;lz=bz;lh=h;
+  }catch(e){}},50);
+}catch(e){console.warn('guard-patch',e)}})();
+`;
+
+const _base11 = module.exports;
+module.exports = function (html) {
+  html = _base11(html);
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-guard">' + GUARD + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
