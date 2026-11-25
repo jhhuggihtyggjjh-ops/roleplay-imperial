@@ -60,7 +60,7 @@ const cleanName = s => String(s || '').trim();function login(ws, kind, d) {
   const u = cleanName(d.u), p = String(d.p || '');
   if (!/^[\p{L}\p{N}_.\-]{3,14}$/u.test(u)) return send(ws, { t: 'err', m: 'Usuário: 3 a 14 letras/números/_' });
   if (p.length < 3 || p.length > 64) return send(ws, { t: 'err', m: 'Senha: mínimo 3 caracteres' });
-  const k = key(u);
+  const k = key(u);  if (bansOf()[k]) return send(ws, { t: 'err', m: '🔨 Conta banida: ' + (bansOf()[k].r || 'sem motivo') });
   let acc = DB[k];
   if (kind === 'reg') {
     if (acc) return send(ws, { t: 'err', m: 'Esse usuário já existe' });
@@ -99,7 +99,7 @@ function removePlayer(me) {
     let d; try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d.t !== 'string') return;
     if (d.t === 'login' || d.t === 'reg') return login(ws, d.t, d);
-    const me = ws.me; if (!me) return;
+    const me = ws.me; if (!me) return;    if (d.t === 'ban' || d.t === 'unban' || d.t === 'bans') return banCmd(me, d);
 
     // limite de mensagens: 8/s com rajada de 40 (protege o servidor com 150 jogadores)
     const now = Date.now();
@@ -174,4 +174,23 @@ setInterval(() => {
 }, 30000);
 
 process.on('SIGTERM', () => { persist(); process.exit(0); });
-server.listen(PORT, () => console.log('Roleplay Imperial rodando na porta ' + PORT + ' · máx ' + MAX));
+server.listen(PORT, () => console.log('Roleplay Imperial rodando na porta ' + PORT + ' · máx ' + MAX));/* ---------- banimento no servidor (só os donos em OWNERS podem banir/desbanir) ---------- */
+const OWNERS = (process.env.OWNERS || 'admin_lider').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+const bansOf = () => (DB['$bans'] = DB['$bans'] || {});
+function banCmd(me, d) {
+  if (!OWNERS.includes(key(me.n))) return;
+  if (d.t === 'bans') return send(me.ws, { t: 'chat', n: '🔨', m: 'Banidos: ' + (Object.keys(bansOf()).join(', ') || 'ninguém') });
+  const n = cleanName(d.n), k = key(n);
+  if (!k) return;
+  if (d.t === 'ban') {
+    if (OWNERS.includes(k)) return;
+    bansOf()[k] = { n, r: String(d.r || 'sem motivo').slice(0, 60), by: me.n, at: Date.now() };
+    dirty = true;
+    const p = byName(n);
+    if (p) { send(p.ws, { t: 'err', m: '🔨 Você foi banido: ' + bansOf()[k].r }); removePlayer(p); try { p.ws.close(); } catch (e) {} }
+    send(me.ws, { t: 'chat', n: '🔨', m: n + ' foi banido pelo servidor' });
+  } else if (d.t === 'unban') {
+    delete bansOf()[k]; dirty = true;
+    send(me.ws, { t: 'chat', n: '✅', m: n + ' foi desbanido pelo servidor' });
+  }
+                 }
