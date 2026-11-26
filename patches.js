@@ -522,4 +522,38 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-patins">' + SKT + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 17) Patins: nunca cansa e animação de deslize melhor (inclinação, passada e curvas) */
+const SKT2 = `
+(function(){try{
+var lastOn=0;
+setInterval(function(){try{
+  var on=window.__SKT?1:0;
+  if(lastOn&&!on){legL.rotation.z=0;legR.rotation.z=0;pg.rotation.x=0;pg.rotation.z=0;pg.rotation.order='XYZ'}
+  lastOn=on}catch(e){}},300);
+var _rt=remoteTick;
+remoteTick=function(dt){
+  var res=_rt.apply(this,arguments);
+  try{remotes.forEach(function(r){
+    var f=r.fo,g=f&&f.g;if(!g)return;
+    if(r._skt&&r.f&&!r._rolling&&!r._lay&&!r.dn){
+      var a=Math.min(1,(r.amp||0)/.6),p=Math.sin(r.ph||0)*a;
+      g.rotation.order='YXZ';g.rotation.x=-.2*a;
+      f.legL.rotation.z=-(.05+Math.max(0,p)*.25);f.legR.rotation.z=.05+Math.max(0,-p)*.25;
+      r._sk2=1}
+    else if(r._sk2){f.legL.rotation.z=0;f.legR.rotation.z=0;if(!r._rolling&&!r._lay){g.rotation.x=0}r._sk2=0}
+  })}catch(e){}
+  return res};
+}catch(e){console.warn('patins2-patch',e)}})();
+`;
+
+const _base13 = module.exports;
+module.exports = function (html) {
+  html = _base13(html)
+    .split("if(RUN&&moving)ST.v-=11*dt;else ST.v+=(moving?8:18)*dt;").join("if(RUN&&moving&&!window.__SKT)ST.v-=11*dt;else ST.v+=(moving?8:18)*dt;")
+    .split("{const sw=v?Math.sin(wph)*(window.__SKT?.26:RUN?.55:CR?.4:.6):0,hip=.95*crS,kn=1.9*crS;lgSw=sw;").join("{const sw=v?Math.sin(wph)*(window.__SKT?.34*Math.min(1,mag*4):RUN?.55:CR?.4:.6):0,hip=.95*crS,kn=1.9*crS;lgSw=sw;")
+    .split("armPose(-sw*.8)}").join("armPose(-sw*(window.__SKT?1.5:.8));if(window.__SKT){const _s=Math.min(1,v/7),_p=Math.sin(wph)*Math.min(1,mag*4);legL.rotation.z=-(.05+Math.max(0,_p)*.3*_s);legR.rotation.z=.05+Math.max(0,-_p)*.3*_s;legL.rotation.x+=.12*_s;legR.rotation.x+=.12*_s;kneeL.rotation.x-=.35*_s;kneeR.rotation.x-=.35*_s;ankL.rotation.x=-(legL.rotation.x+kneeL.rotation.x)*fk;ankR.rotation.x=-(legR.rotation.x+kneeR.rotation.x)*fk}}")
+    .split("pg.rotation.y=ph;pg.scale.set(1,1,1);hospFrame(mag);").join("pg.rotation.y=ph;pg.scale.set(1,1,1);hospFrame(mag);if(window.__SKT&&!DWN.on&&!DTH.on&&crS<.05){const _sv=Math.hypot(FVX,FVZ),_lat=FVX*Math.cos(ph)-FVZ*Math.sin(ph);pg.rotation.order='YXZ';pg.rotation.x=-Math.min(.2,_sv*.018);pg.rotation.z=Math.max(-.3,Math.min(.3,-_lat*.04))}");
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-patins2">' + SKT2 + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
