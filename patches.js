@@ -455,4 +455,71 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-guard">' + GUARD + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 16) Skins de patins na loja de coins (masculina e feminina) com deslize */
+const SKT = `
+(function(){try{
+var NAMES={'Patinador Street':1,'Patinadora Candy':2};
+try{
+  if(!SKINS.some(function(c){return c[0]==='Patinador Street'}))SKINS.push(['Patinador Street',0xd42b2b,0,{j:0x23252b,p:0x2a3350,cap:0xd42b2b,glove:0xd42b2b,shoe:0xf4f4f4},1]);
+  if(!SKINS.some(function(c){return c[0]==='Patinadora Candy'}))SKINS.push(['Patinadora Candy',0xff5fa8,0,{j:0xff5fa8,p:0x6a3cc9,cap:0xffffff,glove:0xffffff,shoe:0xffffff},1]);
+  VSK.sk3='Patinador Street';VSK.sk4='Patinadora Candy';
+  if(!VIPI.some(function(v){return v[0]==='sk3'}))VIPI.push(['sk3','🎽 Skin Patinador Street · masculina · patins com deslize',180]);
+  if(!VIPI.some(function(v){return v[0]==='sk4'}))VIPI.push(['sk4','🎽 Skin Patinadora Candy · feminina · patins com deslize',180]);
+}catch(e){console.warn('patins-loja',e)}
+var SKM=[null,{plate:0x9aa0aa,wheel:0xd42b2b,hub:0xf4f4f4,cuff:0xd42b2b},{plate:0xc9a6ff,wheel:0xff5fa8,hub:0xffffff,cuff:0xff5fa8}];
+function mat(c){return new THREE.MeshLambertMaterial({color:c})}
+function build(sty,y0,zc){
+  var S=SKM[sty],g=new THREE.Group();
+  var plate=new THREE.Mesh(new THREE.BoxGeometry(.09,.02,.3),mat(S.plate));plate.position.set(0,y0-.012,zc);g.add(plate);
+  var cuff=new THREE.Mesh(new THREE.BoxGeometry(.15,.05,.17),mat(S.cuff));cuff.position.set(0,y0+.085,zc+.04);g.add(cuff);
+  [-.115,-.04,.035,.11].forEach(function(dz){
+    var w=new THREE.Mesh(new THREE.CylinderGeometry(.034,.034,.03,14),mat(S.wheel));w.rotation.z=Math.PI/2;w.position.set(0,y0-.04,zc+dz);g.add(w);
+    var hb=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.036,8),mat(S.hub));hb.rotation.z=Math.PI/2;hb.position.set(0,y0-.04,zc+dz);g.add(hb)});
+  return g}
+var cur=0,localG=[],lastS=0;
+function setLocal(sty){
+  localG.forEach(function(x){if(x.parent)x.parent.remove(x)});localG=[];
+  window.__SKT=sty;
+  if(sty){[ankL,ankR].forEach(function(a){var g=build(sty,-.08,-.05);a.add(g);localG.push(g)})}
+  try{netSend({t:'chat',m:'~~skt~~'+sty})}catch(e){}}
+function check(){var n=0;try{var s=SKINS[CL.sk];if(s)n=NAMES[s[0]]||0}catch(e){}if(n!==cur){cur=n;setLocal(n)}}
+var _ac=applyCl;applyCl=function(){var r=_ac.apply(this,arguments);try{check()}catch(e){}return r};
+setInterval(function(){try{check();if(online&&started&&Date.now()-lastS>15000){lastS=Date.now();netSend({t:'chat',m:'~~skt~~'+cur})}}catch(e){}},1000);
+var _rt=remoteTick;
+remoteTick=function(dt){
+  var res=_rt.apply(this,arguments);
+  try{remotes.forEach(function(r){
+    var f=r.fo,g=f&&f.g;if(!g)return;
+    var want=r._skt||0;
+    if(r._skw!==want||r._skp!==g.uuid){
+      (r._skg||[]).forEach(function(x){if(x.parent)x.parent.remove(x)});r._skg=[];
+      if(want){[f.legL,f.legR].forEach(function(q){var s=build(want,-.88,-.05);q.add(s);r._skg.push(s)})}
+      r._skw=want;r._skp=g.uuid}
+    if(want){
+      if(!r._rolling&&!r._lay&&!r.dn){g.position.y=.05;r._skoff=1}
+      if(r.f){f.legL.rotation.x*=.45;f.legR.rotation.x*=.45}}
+    else if(r._skoff){if(!r._rolling&&!r._lay)g.position.y=0;r._skoff=0}
+  })}catch(e){}
+  return res};
+var _nm=netMsg;
+netMsg=function(d){
+  try{if(d&&d.t==='chat'&&typeof d.m==='string'&&d.m.indexOf('~~skt~~')===0){
+    if(d.n!==myName){var r=rmByName(d.n);if(r){var n=+String(d.m).slice(7);r._skt=(n===1||n===2)?n:0}}
+    return}}catch(e){}
+  return _nm.apply(this,arguments)};
+setTimeout(function(){try{check()}catch(e){}},1500);
+}catch(e){console.warn('patins-patch',e)}})();
+`;
+
+const _base12 = module.exports;
+module.exports = function (html) {
+  html = _base12(html)
+    .split("kk=Math.min(1,dt*((tvx||tvz)?13:10));").join("kk=Math.min(1,dt*(window.__SKT?((tvx||tvz)?3.2:.8):((tvx||tvz)?13:10)));")
+    .split("*(MAT.carry>0?.85:1);").join("*(MAT.carry>0?.85:1)*(window.__SKT?1.25:1);")
+    .split("wph+=mag*(CR?4.5:RUN?9*(window.__rsm||1):7)*dt*2;").join("wph+=mag*(CR?4.5:RUN?9*(window.__rsm||1):7)*(window.__SKT?.5:1)*dt*2;")
+    .split("{const sw=v?Math.sin(wph)*(RUN?.55:CR?.4:.6):0,").join("{const sw=v?Math.sin(wph)*(window.__SKT?.26:RUN?.55:CR?.4:.6):0,")
+    .split("pg.position.set(px,GH(px,pz)+FY-.35*crS,pz);pg.rotation.y=ph;pg.scale.set(1,1,1);hospFrame(mag);").join("pg.position.set(px,GH(px,pz)+FY-.35*crS+(window.__SKT?.05:0),pz);pg.rotation.y=ph;pg.scale.set(1,1,1);hospFrame(mag);");
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-patins">' + SKT + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
