@@ -556,4 +556,45 @@ module.exports = function (html) {
   const i = html.lastIndexOf('</body>');
   const tag = '<script id="patch-patins2">' + SKT2 + '</script>';
   return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
+};/* 18) Chat com o teclado do celular (maiúsculas, vírgula, acentos e tudo) · /teclado jogo volta ao antigo */
+const NKB = `
+(function(){try{
+var native=true;try{native=localStorage.getItem('mrnk')!=='0'}catch(e){}
+var cinE=document.getElementById('cin'),kb=document.getElementById('kbd');
+if(!cinE||!kb)return;
+try{var mv=document.querySelector('meta[name=viewport]');if(mv&&mv.content.indexOf('interactive-widget')<0)mv.content+=',interactive-widget=resizes-visual'}catch(e){}
+function chatIsOpen(){var c=document.getElementById('chat');return !!(c&&c.classList.contains('open'))}
+function attrs(){
+  cinE.setAttribute('autocapitalize','sentences');cinE.setAttribute('autocorrect','on');cinE.setAttribute('spellcheck','true');
+  cinE.setAttribute('enterkeyhint','send');cinE.setAttribute('autocomplete','off');cinE.setAttribute('inputmode','text');cinE.maxLength=120}
+function useNative(){
+  cinE.readOnly=false;kb.classList.remove('on');attrs();
+  setTimeout(function(){try{cinE.focus();var L=cinE.value.length;cinE.setSelectionRange(L,L)}catch(e){}},60);
+  setTimeout(function(){if(native&&chatIsOpen()&&document.activeElement!==cinE){cinE.readOnly=true;kb.classList.add('on')}},900)}
+var _co=chatOpen;
+chatOpen=function(v,pre){var r=_co.apply(this,arguments);try{if(v&&native)useNative()}catch(e){}return r};
+try{var row=document.createElement('div');row.className='kr';var nb=document.createElement('button');nb.dataset.k='NK';nb.textContent='⌨️ teclado do celular';nb.style.flex='1';row.appendChild(nb);kb.appendChild(row)}catch(e){}
+function set(v){
+  native=v;try{localStorage.setItem('mrnk',v?'1':'0')}catch(e){}
+  if(chatIsOpen()){if(v)useNative();else{cinE.readOnly=true;kb.classList.add('on');cinE.blur()}}
+  try{chatSay(v?'⌨️ Teclado do celular ligado (maiúsculas, acentos e tudo)':'⌨️ Teclado do jogo ligado','sys')}catch(e){}}
+kb.addEventListener('pointerdown',function(e){var b=e.target.closest&&e.target.closest('button');if(b&&b.dataset.k==='NK'){e.stopImmediatePropagation();e.preventDefault();set(true)}},true);
+var _cc=chatCmd;
+chatCmd=function(t){
+  try{var a=String(t).trim().split(' ').filter(Boolean);
+    if(String(a[0]||'').toLowerCase()==='/teclado'){
+      var w=String(a[1]||'').toLowerCase();
+      if(w==='jogo')set(false);else if(w==='celular'||w==='nativo')set(true);else chatSay('Use: /teclado celular  ou  /teclado jogo','sys');
+      return}
+  }catch(e){}
+  return _cc.apply(this,arguments)};
+}catch(e){console.warn('teclado-patch',e)}})();
+`;
+
+const _base14 = module.exports;
+module.exports = function (html) {
+  html = _base14(html);
+  const i = html.lastIndexOf('</body>');
+  const tag = '<script id="patch-teclado">' + NKB + '</script>';
+  return i >= 0 ? html.slice(0, i) + tag + html.slice(i) : html + tag;
 };
